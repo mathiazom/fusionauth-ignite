@@ -1,0 +1,57 @@
+services:
+  auth-db:
+    image: postgres:16.0-bookworm
+    container_name: fusionauth-db
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    volumes:
+      - fusionauth-data:/var/lib/postgresql/data
+  auth:
+    image: fusionauth/fusionauth-app:latest
+    container_name: fusionauth
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: jdbc:postgresql://auth-db:5432/fusionauth
+      DATABASE_ROOT_USERNAME: postgres
+      DATABASE_ROOT_PASSWORD: postgres
+      DATABASE_USERNAME: fusionauth
+      DATABASE_PASSWORD: fusionauth
+      FUSIONAUTH_APP_RUNTIME_MODE: development
+      FUSIONAUTH_APP_URL: http://auth:9011
+      FUSIONAUTH_APP_KICKSTART_FILE: /usr/local/fusionauth/kickstart.json
+    healthcheck:
+      test: curl --silent --fail http://localhost:9011/api/status -o /dev/null -w "%{http_code}"
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    ports:
+      - 9011:9011
+    env_file:
+      - "./fusionauth.env"
+    volumes:
+      - ./fusionauth-kickstart.json:/usr/local/fusionauth/kickstart.json:ro
+      - fusionauth-config:/usr/local/fusionauth/config
+  fusionauth-ignite:
+    build:
+      context: ..
+      dockerfile: ./docker/Dockerfile
+    container_name: fusionauth-ignite
+    restart: unless-stopped
+    command: tail -f /dev/null
+    volumes:
+      - ../config.kdl:/config.kdl:ro
+
+volumes:
+  fusionauth-data:
+  fusionauth-config:

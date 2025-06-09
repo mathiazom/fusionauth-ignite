@@ -1,0 +1,18 @@
+base-path "http://localhost:9011"
+api-key ""
+external-url "https://"
+issuer "https://"
+admin {
+    username "admin"
+    password ""
+}
+application {
+    id ""
+    name "slackopy"
+    oauth {
+        client-secret ""
+        authorized-origin-urls "https://"
+        authorized-redirect-urls "https://"
+        logout-url "https:/"
+    }
+}
